@@ -35,7 +35,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   if (!credit_in_partition) { // disable scheduling by default
     _is_scheduled = false;
   }
-  weight=0
+  weight=0;
   _qt = type;
   _credits = _is_scheduled
               ? BytePSGlobal::GetPartitionBound() * credit_in_partition
@@ -167,16 +167,16 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     bool pushing = (_qt == PUSH ? 1 : 0);
     weight += 1 / (task -> priority * task -> priority);
     QueueType compete_op = (pushing ? PUSH : PULL);
-    auto compete_queue = BytePSGlobal::GetScheduledQueue(_compete_op);
+    auto compete_queue = BytePSGlobal::GetScheduledQueue(compete_op);
     auto compete_weight = compete_queue -> weight;
     auto maxbandwidth = getenv("CHRIS_MAX_BANDWIDTH");
     auto bandwidth = maxbandwidth ? atoi(maxbandwidth) : INT_MAX;
     auto base_bd = bandwidth * (weight / (weight + compete_weight));
     auto compete_bd = bandwidth * (compete_weight / (weight + compete_weight));
     if(pushing)
-      system("sh /home/ubuntu/change.sh " + str(int(base_bd)) + " " + str(int(compete_bd)));
+      system("sh /home/ubuntu/change.sh " + std::to_string(int(base_bd)) + " " + std::to_string(int(compete_bd)));
     else
-      system("sh /home/ubuntu/change.sh " + str(int(compete_bd)) + " " + str(int(base_bd)));   
+      system("sh /home/ubuntu/change.sh " + std::to_string(int(compete_bd)) + " " + std::to_string(int(base_bd)));   
 }
 
 
