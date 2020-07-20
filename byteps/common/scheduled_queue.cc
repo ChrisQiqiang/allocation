@@ -173,10 +173,12 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     auto bandwidth = maxbandwidth ? atoi(maxbandwidth) : INT_MAX;
     auto base_bd = bandwidth * (weight / (weight + compete_weight));
     auto compete_bd = bandwidth * (compete_weight / (weight + compete_weight));
+    std::string command;
     if(pushing)
-      system("sh /home/ubuntu/change.sh " + std::to_string(int(base_bd)) + " " + std::to_string(int(compete_bd)));
+      command = "sh /home/ubuntu/change.sh " + std::to_string(int(base_bd)) + " " + std::to_string(int(compete_bd));
     else
-      system("sh /home/ubuntu/change.sh " + std::to_string(int(compete_bd)) + " " + std::to_string(int(base_bd)));   
+      command = "sh /home/ubuntu/change.sh " + std::to_string(int(compete_bd)) + " " + std::to_string(int(base_bd));
+    system(command.c_str());
 }
 
 
