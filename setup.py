@@ -930,7 +930,7 @@ class custom_build_ext(build_ext):
             # fix "libcuda.so.1 not found" issue
             cuda_home = os.environ.get('BYTEPS_CUDA_HOME', '/usr/local/cuda')
             cuda_stub_path = cuda_home + '/lib64/stubs'
-            ln_command = "cd " + cuda_stub_path + "; ln -sf libcuda.so libcuda.so.1"
+            ln_command = "cd " + cuda_stub_path + "; sudo ln -sf libcuda.so libcuda.so.1"
             os.system(ln_command)
             try:
                 build_mx_extension(self, options)
