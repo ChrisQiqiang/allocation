@@ -43,6 +43,8 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
 
   auto tuning = getenv("CHRIS_TUNING");
   _chris_tuning = tuning ? atoi(tuning) : 0;
+  auto info = getenv("CHRIS_INFO");
+  _chris_info = info ? atoi(info) : 0;
   if(_qt == PUSH){
       if(_chris_tuning){
         std::string tc_command;
@@ -161,6 +163,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     }
     if((_qt == PUSH || _qt == PULL) && _chris_tuning == 11){
       weight += 1 / ((task -> priority - 1) * (task -> priority - 1));
+      if(_chris_info)
+        BPS_LOG(INFO) << "get task" << task -> tensor_name << "  the priority is:" << task -> priority;
       tune_bandwidth_by_weights(task);
     } 
     BPS_CHECK(task->tensor_name != "");
@@ -176,7 +180,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 }
 
 void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTableEntry> task){
-    std::lock_guard<std::mutex> lock(_mutex);
+    // std::lock_guard<std::mutex> lock(_mutex);
     bool pushing = (_qt == PUSH ? 1 : 0);
     QueueType compete_op = (pushing ? PUSH : PULL);
     auto compete_queue = BytePSGlobal::GetScheduledQueue(compete_op);
@@ -192,7 +196,8 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     else
       command = "sudo sh /home/ubuntu/tc_change.sh " + std::to_string(int(compete_bd)) + " " + std::to_string(int(base_bd));
     // system(command.c_str());
-     BPS_LOG(INFO) << command << "  " << "task priority :" << task -> priority;
+    if(_chris_info)
+      BPS_LOG(INFO) << command << "  " << "task priority :" << task -> priority;
 }
 
 
@@ -232,11 +237,12 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   if (_is_scheduled) {
     std::lock_guard<std::mutex> lock(_mutex);
     _credits += task -> len;
-    
   }
   if((_qt == PUSH || _qt == PULL) && _chris_tuning == 11){
     std::lock_guard<std::mutex> lock(_mutex);
     weight -= 1 / ((task -> priority -1 ) * (task -> priority - 1));
+    if(_chris_info)
+        BPS_LOG(INFO) << "task finished reported: " << task -> tensor_name << "  the priority is:" << task -> priority;
     tune_bandwidth_by_weights(task);  // add
   } 
   return;

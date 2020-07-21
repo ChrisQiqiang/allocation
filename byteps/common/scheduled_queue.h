@@ -45,9 +45,12 @@ class BytePSScheduledQueue {
   std::mutex _mutex;
   uint64_t _credits;
   bool _is_scheduled;
-  int _chris_tuning;
   QueueType _qt;
   ReadyTable *_rt;
+//chris paramter
+  int _chris_tuning;
+  int _chris_info;
+
 };
 
 }  // namespace common
