@@ -40,7 +40,12 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   _credits = _is_scheduled
               ? BytePSGlobal::GetPartitionBound() * credit_in_partition
               : 34359738368;  // 32GB, basically disabling credit control
-  
+  auto tuning = getenv("CHRIS_TUNING");
+  _chris_tuning = tuning ? atoi(tuning) : 0;
+  if(_chris_tuning){
+    std::string tc_command = "sudo sh tc_init.sh";
+    system(tc_command.c_str());
+  }
   _rt = nullptr;
 
   switch (_qt) {
@@ -146,10 +151,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     if (_is_scheduled) {
       _credits -= task->len;
     }
-    auto tuning = getenv("CHRIS_TUNING");
-    auto chris_tuning = tuning ? atoi(tuning) : 0; 
-    if((_qt == PUSH || _qt == PULL) && tuning){
-      weight += 1 / (task -> priority * task -> priority);
+    if((_qt == PUSH || _qt == PULL) && _chris_tuning){
+      weight += 1 / ((task -> priority - 1) * (task -> priority - 1));
       tune_bandwidth_by_weights(task);
     } 
     BPS_CHECK(task->tensor_name != "");
@@ -177,9 +180,9 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     auto compete_bd = bandwidth * (compete_weight / (weight + compete_weight));
     std::string command;
     if(pushing)
-      command = "sh /home/ubuntu/change.sh " + std::to_string(int(base_bd)) + " " + std::to_string(int(compete_bd));
+      command = "sudo sh /home/ubuntu/tc_change.sh " + std::to_string(int(base_bd)) + " " + std::to_string(int(compete_bd));
     else
-      command = "sh /home/ubuntu/change.sh " + std::to_string(int(compete_bd)) + " " + std::to_string(int(base_bd));
+      command = "sudo sh /home/ubuntu/tc_change.sh " + std::to_string(int(compete_bd)) + " " + std::to_string(int(base_bd));
     system(command.c_str());
 }
 
@@ -222,14 +225,11 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
     _credits += task -> len;
     
   }
-  // if(_qt == PUSH || _qt == PULL){
-  //   std::lock_guard<std::mutex> lock(_mutex);
-  //   weight -= 1 / (task -> priority * task -> priority);
-  //   auto tuning = getenv("CHRIS_TUNING");
-  //   auto chris_tuning = tuning ? atoi(tuning) : 0; 
-  //   if(chris_tuning)
-  //       tune_bandwidth_by_weights(task);  // add
-  // } 
+  if((_qt == PUSH || _qt == PULL) && _chris_tuning){
+    std::lock_guard<std::mutex> lock(_mutex);
+    weight -= 1 / ((task -> priority -1 ) * (task -> priority - 1));
+    tune_bandwidth_by_weights(task);  // add
+  } 
   return;
 }
 
