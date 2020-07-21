@@ -45,14 +45,18 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   _chris_tuning = tuning ? atoi(tuning) : 0;
   auto info = getenv("CHRIS_INFO");
   _chris_info = info ? atoi(info) : 0;
+  BPS_LOG(INFO) << "_chris_tuning： " << _chris_tuning << "_chris_info: " << _chris_info;
   if(_qt == PUSH){
       if(_chris_tuning){
         std::string tc_command;
-        if(_chris_tuning==11)
+        if(_chris_tuning==11){
           tc_command = "sudo sh tc_init.sh -l 1";
+          BPS_LOG(INFO) << "task bandwidth limit done";
+        }    
         else
           tc_command = "sudo sh tc_init.sh -l 0";
         system(tc_command.c_str());
+        _tuning_on=1;
       }
   }
 
@@ -161,7 +165,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     if (_is_scheduled) {
       _credits -= task->len;
     }
-    if((_qt == PUSH || _qt == PULL) && _chris_tuning == 11){
+    if((_qt == PUSH || _qt == PULL) && _tuning_on && _chris_tuning == 11){
       weight += 1 / ((task -> priority - 1) * (task -> priority - 1));
       if(_chris_info)
         BPS_LOG(INFO) << "get task" << task -> tensor_name << "  the priority is:" << task -> priority;
@@ -181,6 +185,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 
 void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTableEntry> task){
     // std::lock_guard<std::mutex> lock(_mutex);
+    if(!_tuning_on)return;
     bool pushing = (_qt == PUSH ? 1 : 0);
     QueueType compete_op = (pushing ? PUSH : PULL);
     auto compete_queue = BytePSGlobal::GetScheduledQueue(compete_op);
@@ -238,7 +243,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
     std::lock_guard<std::mutex> lock(_mutex);
     _credits += task -> len;
   }
-  if((_qt == PUSH || _qt == PULL) && _chris_tuning == 11){
+  if((_qt == PUSH || _qt == PULL) && _tuning_on && _chris_tuning == 11){
     std::lock_guard<std::mutex> lock(_mutex);
     weight -= 1 / ((task -> priority -1 ) * (task -> priority - 1));
     if(_chris_info)
