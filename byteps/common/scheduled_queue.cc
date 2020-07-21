@@ -45,7 +45,11 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   _chris_tuning = tuning ? atoi(tuning) : 0;
   if(_qt == PUSH){
       if(_chris_tuning){
-        std::string tc_command = "sudo sh tc_init.sh -l " + ( _chris_tuning==11 ? "1" : "0");
+        std::string tc_command;
+        if(_chris_tuning==11)
+          tc_command = "sudo sh tc_init.sh -l 1";
+        else
+          tc_command = "sudo sh tc_init.sh -l 0";
         system(tc_command.c_str());
       }
   }
