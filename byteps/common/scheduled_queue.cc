@@ -195,7 +195,7 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
       command = "sudo sh /home/ubuntu/tc_change.sh " + std::to_string(int(base_bd)) + " " + std::to_string(int(compete_bd));
     else
       command = "sudo sh /home/ubuntu/tc_change.sh " + std::to_string(int(compete_bd)) + " " + std::to_string(int(base_bd));
-    // system(command.c_str());
+    system(command.c_str());
     if(_chris_info)
       BPS_LOG(INFO) << command << "  " << "task priority :" << task -> priority;
 }
