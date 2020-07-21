@@ -40,12 +40,16 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   _credits = _is_scheduled
               ? BytePSGlobal::GetPartitionBound() * credit_in_partition
               : 34359738368;  // 32GB, basically disabling credit control
+
   auto tuning = getenv("CHRIS_TUNING");
   _chris_tuning = tuning ? atoi(tuning) : 0;
-  if(_chris_tuning){
-    std::string tc_command = "sudo sh tc_init.sh";
-    system(tc_command.c_str());
+  if(_qt == PUSH){
+      if(_chris_tuning){
+        std::string tc_command = "sudo sh tc_init.sh -l " + ( _chris_tuning==11 ? "1" : "0");
+        system(tc_command.c_str());
+      }
   }
+
   _rt = nullptr;
 
   switch (_qt) {
@@ -151,7 +155,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     if (_is_scheduled) {
       _credits -= task->len;
     }
-    if((_qt == PUSH || _qt == PULL) && _chris_tuning){
+    if((_qt == PUSH || _qt == PULL) && _chris_tuning == 11){
       weight += 1 / ((task -> priority - 1) * (task -> priority - 1));
       tune_bandwidth_by_weights(task);
     } 
@@ -225,7 +229,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
     _credits += task -> len;
     
   }
-  if((_qt == PUSH || _qt == PULL) && _chris_tuning){
+  if((_qt == PUSH || _qt == PULL) && _chris_tuning == 11){
     std::lock_guard<std::mutex> lock(_mutex);
     weight -= 1 / ((task -> priority -1 ) * (task -> priority - 1));
     tune_bandwidth_by_weights(task);  // add
