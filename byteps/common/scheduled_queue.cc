@@ -148,8 +148,10 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     }
     auto tuning = getenv("CHRIS_TUNING");
     auto chris_tuning = tuning ? atoi(tuning) : 0; 
-    if((_qt == PUSH || _qt == PULL) && tuning)
+    if((_qt == PUSH || _qt == PULL) && tuning){
+      weight += 1 / (task -> priority * task -> priority);
       tune_bandwidth_by_weights(task);
+    } 
     BPS_CHECK(task->tensor_name != "");
     BPS_LOG(TRACE) << "Queue " << LogStrings[_qt]
                    << " getTask: " << task->tensor_name << " key: " << task->key
@@ -165,12 +167,11 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTableEntry> task){
     std::lock_guard<std::mutex> lock(_mutex);
     bool pushing = (_qt == PUSH ? 1 : 0);
-    weight += 1 / (task -> priority * task -> priority);
     QueueType compete_op = (pushing ? PUSH : PULL);
     auto compete_queue = BytePSGlobal::GetScheduledQueue(compete_op);
-    auto compete_weight = compete_queue -> weight;
+    double compete_weight = compete_queue -> weight;
     auto maxbandwidth = getenv("CHRIS_MAX_BANDWIDTH");
-    auto bandwidth = maxbandwidth ? atoi(maxbandwidth) : INT_MAX;
+    int bandwidth = maxbandwidth ? atoi(maxbandwidth) : INT_MAX;
     if(weight + compete_weight <= 0)return;
     auto base_bd = bandwidth * (weight / (weight + compete_weight));
     auto compete_bd = bandwidth * (compete_weight / (weight + compete_weight));
@@ -221,13 +222,14 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
     _credits += task -> len;
     
   }
-  if(_qt == PUSH || _qt == PULL){
-    std::lock_guard<std::mutex> lock(_mutex);
-    weight -= 1 / (task -> priority * task -> priority);
-    auto tuning = getenv("CHRIS_TUNING");
-    auto chris_tuning = tuning ? atoi(tuning) : 0; 
-    if(tuning)tune_bandwidth_by_weights(task);  // add
-  } 
+  // if(_qt == PUSH || _qt == PULL){
+  //   std::lock_guard<std::mutex> lock(_mutex);
+  //   weight -= 1 / (task -> priority * task -> priority);
+  //   auto tuning = getenv("CHRIS_TUNING");
+  //   auto chris_tuning = tuning ? atoi(tuning) : 0; 
+  //   if(chris_tuning)
+  //       tune_bandwidth_by_weights(task);  // add
+  // } 
   return;
 }
 
