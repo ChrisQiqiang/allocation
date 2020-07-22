@@ -190,20 +190,36 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     if(weight + compete_weight <= 0)return;
     int base_bd = double(_chris_bandwidth) * (weight / (weight + compete_weight)) + 10;
     int compete_bd = double(_chris_bandwidth) * (compete_weight / (weight + compete_weight)) + 10;
+
     std::string command;
     std::string bd1 = std::to_string(base_bd);
     std::string bd2 = std::to_string(compete_bd);
-    if(pushing)
-      command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd1 + "mbit ceil " + bd1 + "mbit\n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd2 + "mbit ceil " + bd2 + "mbit";
-    else
-      command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd2 + "mbit ceil " + bd2 + "mbit\n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd1 + "mbit ceil " + bd1 + "mbit";
-    if(_chris_info){
+    if(pushing){
+      if(abs(base_bd - _old_bd_ps) >= _chris_bandwidth * 0.3 || abs(compete_bd - _old_bd_worker) >=_chris_bandwidth * 0.25){
+        command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd1 + "mbit ceil " + bd1 + "mbit\n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd2 + "mbit ceil " + bd2 + "mbit";
+        _old_bd_ps = base_bd;
+        _old_bd_worker = compete_bd;
+      }
+      else
+        return;
+    }
+    else{
+       if(abs(compete_bd - _old_bd_ps) >= _chris_bandwidth * 0.3 || abs(base_bd - _old_bd_worker) >=_chris_bandwidth * 0.25{
+          command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd2 + "mbit ceil " + bd2 + "mbit\n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd1 + "mbit ceil " + bd1 + "mbit";
+          _old_bd_ps = compete_bd;
+          _old_bd_worker = base_bd;
+       }
+       else
+          return;
+    }
+   if(_chris_info){
       BPS_LOG(INFO) << LogStrings[_qt] << " " << weight << " " 
                     << compete_weight << command << "  " <<
                      "task priority :" << task -> priority;
     }
-    if(_chris_tuning == 11) 
+    if(_chris_tuning == 11)
       system(command.c_str());
+      
 }
 
 

@@ -52,6 +52,8 @@ class BytePSScheduledQueue {
   int _chris_info;
   int _tuning_on=0;
   int _chris_bandwidth;
+  int _old_bd_ps;
+  int _old_bd_worker;
 };
 
 }  // namespace common
