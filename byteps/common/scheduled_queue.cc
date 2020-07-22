@@ -54,7 +54,10 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   if(_qt == PUSH){
       if(_chris_tuning){
         std::string tc_command;
-        tc_command = "sudo sh tc_init.sh -l 1";
+        if(_chris_tuning == 10)
+          tc_command = "sudo sh tc_init.sh -l 0";
+        else
+          tc_command = "sudo sh tc_init.sh -l 1";
         BPS_LOG(INFO) << "task bandwidth limit done";
         system(tc_command.c_str());  
       }
