@@ -111,6 +111,7 @@ void BytePSScheduledQueue::addTask(std::shared_ptr<TensorTableEntry> entry) {
         });
   }
   BPS_CHECK(entry->tensor_name != "");
+  if(!_tuning_on && task -> priority != 0)_tuning_on = 1;
   BPS_LOG(TRACE) << "Queue " << LogStrings[_qt]
                  << " addTask: " << entry->tensor_name << " key: " << entry->key
                  << " rank: " << BytePSGlobal::GetLocalRank();
@@ -165,7 +166,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     if (_is_scheduled) {
       _credits -= task->len;
     }
-    if(_qt == PUSH || _qt == PULL){
+    if((_qt == PUSH || _qt == PULL) && _tuning_on){
       weight += 100000 / ((task -> priority - 1) * (task -> priority - 1));
       if(_chris_info == 1)
         BPS_LOG(INFO) << "get task"  << LogStrings[_qt]  << task -> tensor_name 
@@ -264,7 +265,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
     std::lock_guard<std::mutex> lock(_mutex);
     _credits += task -> len;
   }
-  if(_qt == PUSH || _qt == PULL){
+  if((_qt == PUSH || _qt == PULL) && _tuning_on){
     std::lock_guard<std::mutex> lock(_mutex);
     weight -= (100000 / ((task -> priority -1 ) * (task -> priority - 1)));
     if(_chris_info == 1)
