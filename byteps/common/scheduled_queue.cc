@@ -55,8 +55,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
         }    
         else
           tc_command = "sudo sh tc_init.sh -l 0";
-        system(tc_command.c_str());
-        _tuning_on=1;
+        system(tc_command.c_str());  
       }
   }
 
@@ -165,12 +164,12 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     if (_is_scheduled) {
       _credits -= task->len;
     }
-    if((_qt == PUSH || _qt == PULL) && _tuning_on && _chris_tuning == 11){
+    if((_qt == PUSH || _qt == PULL) && _chris_tuning == 11){
       weight += 1 / ((task -> priority - 1) * (task -> priority - 1));
       if(_chris_info)
         BPS_LOG(INFO) << "get task" << task -> tensor_name << "  the priority is:" << task -> priority;
       tune_bandwidth_by_weights(task);
-    } 
+    }   
     BPS_CHECK(task->tensor_name != "");
     BPS_LOG(TRACE) << "Queue " << LogStrings[_qt]
                    << " getTask: " << task->tensor_name << " key: " << task->key
@@ -185,7 +184,6 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 
 void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTableEntry> task){
     // std::lock_guard<std::mutex> lock(_mutex);
-    if(!_tuning_on)return;
     bool pushing = (_qt == PUSH ? 1 : 0);
     QueueType compete_op = (pushing ? PUSH : PULL);
     auto compete_queue = BytePSGlobal::GetScheduledQueue(compete_op);
@@ -196,13 +194,17 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     auto base_bd = bandwidth * (weight / (weight + compete_weight));
     auto compete_bd = bandwidth * (compete_weight / (weight + compete_weight));
     std::string command;
+    std::string bd1 = std::to_string(int(base_bd));
+    std::string bd2 = std::to_string(int(compete_bd));
     if(pushing)
-      command = "sudo sh /home/ubuntu/tc_change.sh " + std::to_string(int(base_bd)) + " " + std::to_string(int(compete_bd));
+      command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd1 + "mbit ceil " + bd1 + "mbit\n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd2 + "mbit ceil " + bd2 + "mbit";
     else
-      command = "sudo sh /home/ubuntu/tc_change.sh " + std::to_string(int(compete_bd)) + " " + std::to_string(int(base_bd));
-    system(command.c_str());
-    if(_chris_info)
+      command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd2 + "mbit ceil " + bd2 + "mbit\n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd1 + "mbit ceil " + bd1 + "mbit";
+    if(_chris_info){
+      system(command.c_str());
       BPS_LOG(INFO) << command << "  " << "task priority :" << task -> priority;
+    }
+      
 }
 
 
@@ -243,7 +245,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
     std::lock_guard<std::mutex> lock(_mutex);
     _credits += task -> len;
   }
-  if((_qt == PUSH || _qt == PULL) && _tuning_on && _chris_tuning == 11){
+  if((_qt == PUSH || _qt == PULL) && _chris_tuning == 11){
     std::lock_guard<std::mutex> lock(_mutex);
     weight -= 1 / ((task -> priority -1 ) * (task -> priority - 1));
     if(_chris_info)
