@@ -45,7 +45,9 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   _chris_tuning = tuning ? atoi(tuning) : 0;
   auto info = getenv("CHRIS_INFO");
   _chris_info = info ? atoi(info) : 0;
-  BPS_LOG(INFO) << "_chris_tuning： " << _chris_tuning << "_chris_info: " << _chris_info;
+  auto maxbandwidth = getenv("CHRIS_MAX_BANDWIDTH");
+  _chris_bandwidth = maxbandwidth ? atoi(maxbandwidth) : INT_MAX;
+  BPS_LOG(INFO) << "_chris_tuning:" << _chris_tuning << "   _chris_info: " << _chris_info << << "  _chris_bandwidth: " << _chris_bandwidth;
   if(_qt == PUSH){
       if(_chris_tuning){
         std::string tc_command;
@@ -165,7 +167,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       _credits -= task->len;
     }
     if((_qt == PUSH || _qt == PULL) && _chris_tuning == 11){
-      weight += 1 / ((task -> priority - 1) * (task -> priority - 1));
+      weight += 100000 / ((task -> priority - 1) * (task -> priority - 1));
       if(_chris_info)
         BPS_LOG(INFO) << "get task"  << LogStrings[_qt]  << task -> tensor_name 
                       << "  the priority is:" << task -> priority
@@ -189,11 +191,9 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     QueueType compete_op = (pushing ? PUSH : PULL);
     auto compete_queue = BytePSGlobal::GetScheduledQueue(compete_op);
     double compete_weight = compete_queue -> weight;
-    auto maxbandwidth = getenv("CHRIS_MAX_BANDWIDTH");
-    int bandwidth = maxbandwidth ? atoi(maxbandwidth) : INT_MAX;
     if(weight + compete_weight <= 0)return;
-    double base_bd = double(bandwidth) * (weight / (weight + compete_weight));
-    double compete_bd = double(bandwidth) * (compete_weight / (weight + compete_weight));
+    double base_bd = double(_chris_bandwidth) * (weight / (weight + compete_weight));
+    double compete_bd = double(_chris_bandwidth) * (compete_weight / (weight + compete_weight));
     std::string command;
     std::string bd1 = std::to_string(int(base_bd));
     std::string bd2 = std::to_string(int(compete_bd));
@@ -250,7 +250,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   }
   if((_qt == PUSH || _qt == PULL) && _chris_tuning == 11){
     std::lock_guard<std::mutex> lock(_mutex);
-    weight -= 1 / ((task -> priority -1 ) * (task -> priority - 1));
+    weight -= (100000 / ((task -> priority -1 ) * (task -> priority - 1)));
     if(_chris_info)
         BPS_LOG(INFO) << "task finished reported: " << task -> tensor_name << "  the priority is:" << task -> priority;
     tune_bandwidth_by_weights(task);  // add

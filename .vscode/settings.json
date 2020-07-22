@@ -3,6 +3,7 @@
         "ios": "cpp",
         "xiosbase": "cpp",
         "memory": "cpp",
-        "xstring": "cpp"
+        "xstring": "cpp",
+        "ostream": "cpp"
     }
 }
