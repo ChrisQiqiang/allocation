@@ -169,7 +169,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       if(_chris_info)
         BPS_LOG(INFO) << "get task"  << LogStrings[_qt]  << task -> tensor_name 
                       << "  the priority is:" << task -> priority
-                      << weight;
+                      << " weight:" << weight;
       tune_bandwidth_by_weights(task);
     }   
     BPS_CHECK(task->tensor_name != "");
@@ -192,8 +192,8 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     auto maxbandwidth = getenv("CHRIS_MAX_BANDWIDTH");
     int bandwidth = maxbandwidth ? atoi(maxbandwidth) : INT_MAX;
     if(weight + compete_weight <= 0)return;
-    auto base_bd = bandwidth * (weight / (weight + compete_weight));
-    auto compete_bd = bandwidth * (compete_weight / (weight + compete_weight));
+    double base_bd = double(bandwidth) * (weight / (weight + compete_weight));
+    double compete_bd = double(bandwidth) * (compete_weight / (weight + compete_weight));
     std::string command;
     std::string bd1 = std::to_string(int(base_bd));
     std::string bd2 = std::to_string(int(compete_bd));
