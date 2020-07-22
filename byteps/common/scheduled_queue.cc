@@ -197,9 +197,15 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     auto compete_queue = BytePSGlobal::GetScheduledQueue(compete_op);
     int compete_weight = compete_queue -> weight;
     if(weight + compete_weight <= 0)return;
-    int base_bd = double(_chris_bandwidth) * (double(weight) / (weight + compete_weight)) + 10;
-    int compete_bd = double(_chris_bandwidth) * (double(compete_weight) / (weight + compete_weight)) + 10;
-
+    int base_bd, compete_bd;
+    if(weight < 10 && compete_weight < 10){
+      base_bd = _chris_bandwidth;
+      compete_bd = _chris_bandwidth;
+    }
+    else{
+      base_bd = _chris_bandwidth * (double(weight) / (weight + compete_weight)) + 10;
+      compete_bd = _chris_bandwidth * (double(compete_weight) / (weight + compete_weight)) + 10;
+    }
     std::string command;
     std::string bd1 = std::to_string(base_bd);
     std::string bd2 = std::to_string(compete_bd);
