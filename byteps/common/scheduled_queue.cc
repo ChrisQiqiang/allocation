@@ -51,12 +51,8 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   if(_qt == PUSH){
       if(_chris_tuning){
         std::string tc_command;
-        if(_chris_tuning==11){
-          tc_command = "sudo sh tc_init.sh -l 1";
-          BPS_LOG(INFO) << "task bandwidth limit done";
-        }    
-        else
-          tc_command = "sudo sh tc_init.sh -l 0";
+        tc_command = "sudo sh tc_init.sh -l 1";
+        BPS_LOG(INFO) << "task bandwidth limit done";
         system(tc_command.c_str());  
       }
   }
@@ -202,12 +198,12 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     else
       command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd2 + "mbit ceil " + bd2 + "mbit\n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd1 + "mbit ceil " + bd1 + "mbit";
     if(_chris_info){
-      system(command.c_str());
       BPS_LOG(INFO) << LogStrings[_qt] << " " << weight << " " 
                     << compete_weight << command << "  " <<
                      "task priority :" << task -> priority;
     }
-      
+    if(_chris_tuning == 11)
+      system(command.c_str());
 }
 
 
