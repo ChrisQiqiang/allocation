@@ -204,7 +204,7 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
         return;
     }
     else{
-       if(abs(compete_bd - _old_bd_ps) >= _chris_bandwidth * 0.3 || abs(base_bd - _old_bd_worker) >=_chris_bandwidth * 0.25{
+       if(abs(compete_bd - _old_bd_ps) >= _chris_bandwidth * 0.3 || abs(base_bd - _old_bd_worker) >=_chris_bandwidth * 0.25){
           command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd2 + "mbit ceil " + bd2 + "mbit\n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd1 + "mbit ceil " + bd1 + "mbit";
           _old_bd_ps = compete_bd;
           _old_bd_worker = base_bd;
