@@ -54,6 +54,7 @@ class BytePSScheduledQueue {
   int _chris_bandwidth;
   int _old_bd_ps=0;
   int _old_bd_worker=0;
+  int _chris_threshold;
 };
 
 }  // namespace common

@@ -47,7 +47,10 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   _chris_info = info ? atoi(info) : 0;
   auto maxbandwidth = getenv("CHRIS_MAX_BANDWIDTH");
   _chris_bandwidth = maxbandwidth ? atoi(maxbandwidth) : INT_MAX;
-  BPS_LOG(INFO) << "_chris_tuning:" << _chris_tuning << "   _chris_info: " << _chris_info << "  _chris_bandwidth: " << _chris_bandwidth;
+  auto threshold = getenv("CHRIS_THRESHOLD");
+  _chris_threshold = threshold ? atoi(threshold) : 1;
+  BPS_LOG(INFO) << "_chris_tuning:" << _chris_tuning << "   _chris_info: " << _chris_info 
+                << "  _chris_bandwidth: " << _chris_bandwidth << "  _chris_threshold:" << _chris_threshold;
   if(_qt == PUSH){
       if(_chris_tuning){
         std::string tc_command;
@@ -194,8 +197,9 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     std::string command;
     std::string bd1 = std::to_string(base_bd);
     std::string bd2 = std::to_string(compete_bd);
+    double change_threshold = _chris_threshold / 100;
     if(pulling){
-      if(abs(base_bd - _old_bd_ps) >= _chris_bandwidth * 0.2 || abs(compete_bd - _old_bd_worker) >=_chris_bandwidth * 0.2){
+      if(abs(base_bd - _old_bd_ps) >= _chris_bandwidth * change_threshold || abs(compete_bd - _old_bd_worker) >=_chris_bandwidth * change_threshold){
         command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd1 + "mbit ceil " + bd1 + "mbit\n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd2 + "mbit ceil " + bd2 + "mbit";
         _old_bd_ps = base_bd; //in pull process, ps upload is base, 1:3
         _old_bd_worker = compete_bd;
@@ -204,7 +208,7 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
         return;
     }
     else{
-       if(abs(compete_bd - _old_bd_ps) >= _chris_bandwidth * 0.2 || abs(base_bd - _old_bd_worker) >= _chris_bandwidth * 0.2){
+       if(abs(compete_bd - _old_bd_ps) >= _chris_bandwidth * change_threshold || abs(base_bd - _old_bd_worker) >= _chris_bandwidth * change_threshold){
           command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd2 + "mbit ceil " + bd2 + "mbit\n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd1 + "mbit ceil " + bd1 + "mbit";
           _old_bd_ps = compete_bd;
           _old_bd_worker = base_bd; //in push process, worker upload is base, 1:4
