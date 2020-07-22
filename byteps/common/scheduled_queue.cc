@@ -172,7 +172,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     }
     if((_qt == PUSH || _qt == PULL) && _tuning_on){
       // weight += 100000 / ((task -> priority - 1) * (task -> priority - 1)); //func 1, 10000 / x^2 ,not ideal
-      weight += exp(task -> priority / 10); //func2, _chris_bandwidth * e ^ (-x / 10); aggregation
+      weight += _chris_bandwidth * exp(task -> priority / 10); //func2, _chris_bandwidth * e ^ (-x / 10); aggregation
       if(_chris_info == 1)
         BPS_LOG(INFO) << "get task"  << LogStrings[_qt]  << task -> tensor_name 
                       << "  the priority is:" << task -> priority
@@ -195,10 +195,10 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     bool pulling = (_qt == PULL ? 1 : 0);
     QueueType compete_op = (pulling ? PUSH : PULL);
     auto compete_queue = BytePSGlobal::GetScheduledQueue(compete_op);
-    double compete_weight = compete_queue -> weight;
+    int compete_weight = compete_queue -> weight;
     if(weight + compete_weight <= 0)return;
-    int base_bd = double(_chris_bandwidth) * (weight / (weight + compete_weight)) + 10;
-    int compete_bd = double(_chris_bandwidth) * (compete_weight / (weight + compete_weight)) + 10;
+    int base_bd = double(_chris_bandwidth) * (double(weight) / (weight + compete_weight)) + 10;
+    int compete_bd = double(_chris_bandwidth) * (double(compete_weight) / (weight + compete_weight)) + 10;
 
     std::string command;
     std::string bd1 = std::to_string(base_bd);
@@ -273,7 +273,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   if((_qt == PUSH || _qt == PULL) && _tuning_on){
     std::lock_guard<std::mutex> lock(_mutex);
     // weight -= (100000 / ((task -> priority -1 ) * (task -> priority - 1)));
-    weight -= exp(task -> priority / 10); 
+    weight -= _chris_bandwidth * exp(task -> priority / 10); 
     if(_chris_info == 1)
         BPS_LOG(INFO) << "task finished reported: " << task -> tensor_name << "  the priority is:" << task -> priority;
     tune_bandwidth_by_weights(task);  // add

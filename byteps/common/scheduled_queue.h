@@ -37,7 +37,7 @@ class BytePSScheduledQueue {
   uint32_t pendingSize();
   void reportFinish(std::shared_ptr<TensorTableEntry> task);
   void tune_bandwidth_by_weights(std::shared_ptr<TensorTableEntry> task);
-  double weight;
+  int weight;
 
  private:
   // TODO: use priority queue or heap
