@@ -15,6 +15,7 @@
 
 #include "scheduled_queue.h"
 #include <algorithm>
+#include <cmath>
 #include "global.h"
 #include "logging.h"
 
