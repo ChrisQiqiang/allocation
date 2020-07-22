@@ -202,8 +202,7 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
                     << compete_weight << command << "  " <<
                      "task priority :" << task -> priority;
     }
-    if(_chris_tuning == 11)
-      system(command.c_str());
+    system(command.c_str());
 }
 
 
