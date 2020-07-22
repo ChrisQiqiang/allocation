@@ -170,7 +170,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       _credits -= task->len;
     }
     if((_qt == PUSH || _qt == PULL) && _tuning_on){
-      weight += 100000 / ((task -> priority - 1) * (task -> priority - 1));
+      // weight += 100000 / ((task -> priority - 1) * (task -> priority - 1)); //func 1, 10000 / x^2 ,not ideal
+      weight += exp(task -> priority / 10); //func2, _chris_bandwidth * e ^ (-x / 10); aggregation
       if(_chris_info == 1)
         BPS_LOG(INFO) << "get task"  << LogStrings[_qt]  << task -> tensor_name 
                       << "  the priority is:" << task -> priority
@@ -204,7 +205,7 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     double change_threshold = double(_chris_threshold) / 100;
     if(pulling){
       if(abs(base_bd - _old_bd_ps) >= _chris_bandwidth * change_threshold || abs(compete_bd - _old_bd_worker) >=_chris_bandwidth * change_threshold){
-        command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd1 + "mbit ceil " + bd1 + "mbit\n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd2 + "mbit ceil " + bd2 + "mbit";
+        command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd1 + "mbit \n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd2 + "mbit";
         _old_bd_ps = base_bd; //in pull process, ps upload is base, 1:3
         _old_bd_worker = compete_bd;
       }
@@ -213,7 +214,7 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     }
     else{
        if(abs(compete_bd - _old_bd_ps) >= _chris_bandwidth * change_threshold || abs(base_bd - _old_bd_worker) >= _chris_bandwidth * change_threshold){
-          command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd2 + "mbit ceil " + bd2 + "mbit\n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd1 + "mbit ceil " + bd1 + "mbit";
+          command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd2 + "mbit \n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd1 + "mbit";
           _old_bd_ps = compete_bd;
           _old_bd_worker = base_bd; //in push process, worker upload is base, 1:4
        }
@@ -270,7 +271,8 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   }
   if((_qt == PUSH || _qt == PULL) && _tuning_on){
     std::lock_guard<std::mutex> lock(_mutex);
-    weight -= (100000 / ((task -> priority -1 ) * (task -> priority - 1)));
+    // weight -= (100000 / ((task -> priority -1 ) * (task -> priority - 1)));
+    weight -= exp(task -> priority / 10); 
     if(_chris_info == 1)
         BPS_LOG(INFO) << "task finished reported: " << task -> tensor_name << "  the priority is:" << task -> priority;
     tune_bandwidth_by_weights(task);  // add
