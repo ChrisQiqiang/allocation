@@ -188,7 +188,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 
 void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTableEntry> task){
     bool pushing = (_qt == PUSH ? 1 : 0);
-    QueueType compete_op = (pushing ? PUSH : PULL);
+    QueueType compete_op = (pushing ? PULL : PUSH);
     auto compete_queue = BytePSGlobal::GetScheduledQueue(compete_op);
     double compete_weight = compete_queue -> weight;
     if(weight + compete_weight <= 0)return;
