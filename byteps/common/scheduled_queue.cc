@@ -47,7 +47,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   _chris_info = info ? atoi(info) : 0;
   auto maxbandwidth = getenv("CHRIS_MAX_BANDWIDTH");
   _chris_bandwidth = maxbandwidth ? atoi(maxbandwidth) : INT_MAX;
-  BPS_LOG(INFO) << "_chris_tuning:" << _chris_tuning << "   _chris_info: " << _chris_info << << "  _chris_bandwidth: " << _chris_bandwidth;
+  BPS_LOG(INFO) << "_chris_tuning:" << _chris_tuning << "   _chris_info: " << _chris_info << "  _chris_bandwidth: " << _chris_bandwidth;
   if(_qt == PUSH){
       if(_chris_tuning){
         std::string tc_command;
