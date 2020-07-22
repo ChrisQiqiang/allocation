@@ -162,7 +162,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     if (_is_scheduled) {
       _credits -= task->len;
     }
-    if((_qt == PUSH || _qt == PULL) && _chris_tuning == 11){
+    if(_qt == PUSH || _qt == PULL){
       weight += 100000 / ((task -> priority - 1) * (task -> priority - 1));
       if(_chris_info)
         BPS_LOG(INFO) << "get task"  << LogStrings[_qt]  << task -> tensor_name 
@@ -188,11 +188,11 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     auto compete_queue = BytePSGlobal::GetScheduledQueue(compete_op);
     double compete_weight = compete_queue -> weight;
     if(weight + compete_weight <= 0)return;
-    double base_bd = double(_chris_bandwidth) * (weight / (weight + compete_weight));
-    double compete_bd = double(_chris_bandwidth) * (compete_weight / (weight + compete_weight));
+    int base_bd = double(_chris_bandwidth) * (weight / (weight + compete_weight)) + 10;
+    int compete_bd = double(_chris_bandwidth) * (compete_weight / (weight + compete_weight)) + 10;
     std::string command;
-    std::string bd1 = std::to_string(int(base_bd));
-    std::string bd2 = std::to_string(int(compete_bd));
+    std::string bd1 = std::to_string(base_bd);
+    std::string bd2 = std::to_string(compete_bd);
     if(pushing)
       command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd1 + "mbit ceil " + bd1 + "mbit\n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd2 + "mbit ceil " + bd2 + "mbit";
     else
@@ -202,7 +202,8 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
                     << compete_weight << command << "  " <<
                      "task priority :" << task -> priority;
     }
-    system(command.c_str());
+    if(_chris_tuning == 11) 
+      system(command.c_str());
 }
 
 
@@ -243,7 +244,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
     std::lock_guard<std::mutex> lock(_mutex);
     _credits += task -> len;
   }
-  if((_qt == PUSH || _qt == PULL) && _chris_tuning == 11){
+  if(_qt == PUSH || _qt == PULL){
     std::lock_guard<std::mutex> lock(_mutex);
     weight -= (100000 / ((task -> priority -1 ) * (task -> priority - 1)));
     if(_chris_info)
