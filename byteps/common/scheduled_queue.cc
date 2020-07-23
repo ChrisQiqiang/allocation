@@ -177,7 +177,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         BPS_LOG(INFO) << "get task"  << LogStrings[_qt]  << task -> tensor_name 
                       << "  the priority is:" << task -> priority
                       << " weight:" << weight;
-      tune_bandwidth_by_weights(task);
+      if(_qt == PULL) // avoid duplicated adjustment
+        tune_bandwidth_by_weights(task);
     }   
     BPS_CHECK(task->tensor_name != "");
     BPS_LOG(TRACE) << "Queue " << LogStrings[_qt]
@@ -207,13 +208,13 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
       if(_chris_info == 1)
           BPS_LOG(INFO) << ".........................RESET....................";
     }
-    else if(double(weight) / (weight + compete_weight) < 0.35){ // to keep bandwidth change more smooth.
-      base_bd = _chris_bandwidth * 0.35;
-      compete_bd = _chris_bandwidth;
+    else if(double(weight) / (weight + compete_weight) < 0.3){ // to keep bandwidth change more smooth.
+      base_bd = _chris_bandwidth * 0.3;
+      compete_bd = _chris_bandwidth * 0.7;
     }
-    else if(double(compete_weight) / (weight + compete_weight) < 0.35){
-      base_bd = _chris_bandwidth;
-      compete_bd = _chris_bandwidth * 0.35;
+    else if(double(compete_weight) / (weight + compete_weight) < 0.3){
+      base_bd = _chris_bandwidth * 0.7;
+      compete_bd = _chris_bandwidth * 0.3;
     }
     else{
       base_bd = _chris_bandwidth * (double(weight) / (weight + compete_weight)) ;
@@ -295,7 +296,8 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
     weight -= _chris_bandwidth * exp(task -> priority / 10); 
     if(_chris_info == 1)
         BPS_LOG(INFO) << "task finished reported: " << task -> tensor_name << "  the priority is:" << task -> priority;
-    tune_bandwidth_by_weights(task);  // add
+    if(_qt == PULL)
+      tune_bandwidth_by_weights(task);  // add
   } 
   return;
 }
