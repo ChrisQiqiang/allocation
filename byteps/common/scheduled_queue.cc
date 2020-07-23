@@ -196,15 +196,20 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     QueueType compete_op = (pulling ? PUSH : PULL);
     auto compete_queue = BytePSGlobal::GetScheduledQueue(compete_op);
     int compete_weight = compete_queue -> weight;
+    //weight cannot be initialized between iterations, thus negative weight exists.
+    weight = weight > 0 ? weight : 0;
+    compete_weight = compete_weight > 0 ? compete_weight : 0;
     if(weight + compete_weight <= 0)return;
     int base_bd, compete_bd;
-    if(weight < 10 && compete_weight < 10){
+    if(weight < 10 && compete_weight < 10){ //avoid bandwidth waste when transfer low-priority parameters.
       base_bd = _chris_bandwidth;
       compete_bd = _chris_bandwidth;
     }
     else{
       base_bd = _chris_bandwidth * (double(weight) / (weight + compete_weight)) + 10;
       compete_bd = _chris_bandwidth * (double(compete_weight) / (weight + compete_weight)) + 10;
+      if(_chris_info)
+          BPS_LOG(INFO) << ".........................RESET....................";
     }
     std::string command;
     std::string bd1 = std::to_string(base_bd);
