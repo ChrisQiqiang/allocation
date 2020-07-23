@@ -201,15 +201,23 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
     compete_weight = compete_weight > 0 ? compete_weight : 0;
     if(weight + compete_weight <= 0)return;
     int base_bd, compete_bd;
-    if(weight < 10 && compete_weight < 10){ //avoid bandwidth waste when transfer low-priority parameters.
+    if(weight < 100 && compete_weight < 100){ //avoid bandwidth waste when transfer low-priority parameters.
       base_bd = _chris_bandwidth;
       compete_bd = _chris_bandwidth;
       if(_chris_info == 1)
           BPS_LOG(INFO) << ".........................RESET....................";
     }
+    else if(double(weight) / (weight + compete_weight) < 0.25){ // to keep bandwidth change more smooth.
+      base_bd = _chris_bandwidth * 0.25;
+      compete_bd = _chris_bandwidth;
+    }
+    else if(double(compete_weight) / (weight + compete_weight) < 0.25){
+      base_bd = _chris_bandwidth;
+      compete_bd = _chris_bandwidth * 0.25;
+    }
     else{
-      base_bd = _chris_bandwidth * (double(weight) / (weight + compete_weight)) + 10;
-      compete_bd = _chris_bandwidth * (double(compete_weight) / (weight + compete_weight)) + 10;
+      base_bd = _chris_bandwidth * (double(weight) / (weight + compete_weight)) ;
+      compete_bd = _chris_bandwidth * (double(compete_weight) / (weight + compete_weight)) ;
     }
     std::string command;
     std::string bd1 = std::to_string(base_bd);
