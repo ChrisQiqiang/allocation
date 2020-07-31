@@ -202,7 +202,7 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
       auto pull_queue = BytePSGlobal::GetScheduledQueue(PULL);
       double pull_weight = pull_queue -> weight;
       std::string ps, worker;
-      if (weight < _chris_bandwidth) return;
+      if (weight < _chris_bandwidth * exp(-1)) return;
       if(weight / (weight + pull_weight) < 0.05){
         _old_bd_ps = _chris_bandwidth * 1;
         _old_bd_worker = _chris_bandwidth * 1;
