@@ -52,7 +52,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   _chris_threshold = threshold ? atoi(threshold) : 1;
   _worker_id = getenv("DMLC_WORKER_ID");
   auto _pull_base = getenv("CHRIS_PULL_BASE");
-  _chris_pull_base = _pull_base ? double(atoi(_chris_pull_base)) / 100 : 0.1;
+  _chris_pull_base = _pull_base ? double(atoi(_pull_base)) / 100 : 0.1;
   if(_qt == PULL)
     BPS_LOG(INFO) << "_chris_tuning:" << _chris_tuning << "   _chris_info: " << _chris_info 
                 << "  _chris_bandwidth: " << _chris_bandwidth << "  _chris_threshold:" << _chris_threshold << " worker id:" << _worker_id;
