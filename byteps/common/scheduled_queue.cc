@@ -179,10 +179,10 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       // weight += 100000 / ((task -> priority - 1) * (task -> priority - 1)); //func 1, 10000 / x^2 ,not ideal
       weight += _chris_bandwidth * exp(task -> priority / 10); //func2, _chris_bandwidth * e ^ (-x / 10); aggregation
       if(_chris_info == 1)
-        BPS_LOG(INFO) << "get task"  << LogStrings[_qt]  << task -> tensor_name 
+        BPS_LOG(INFO) << "get task "  << LogStrings[_qt]  << task -> tensor_name 
                       << "  the priority is:" << task -> priority
                       << " weight:" << weight;
-      if(_qt == PULL) // avoid duplicated adjustment
+       // avoid duplicated adjustment
         tune_bandwidth_by_weights(task);
     }   
     BPS_CHECK(task->tensor_name != "");
@@ -226,67 +226,7 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
         _old_command = command;
       }
         
-    }
-
-    // bool pulling = (_qt == PULL ? 1 : 0);
-    // QueueType compete_op = (pulling ? PUSH : PULL);
-    // auto compete_queue = BytePSGlobal::GetScheduledQueue(compete_op);
-    // int compete_weight = compete_queue -> weight;
-    // //weight cannot be initialized between iterations, thus negative weight exists.
-    // weight = weight > 0 ? weight : 0;
-    // compete_weight = compete_weight > 0 ? compete_weight : 0;
-    // if(weight + compete_weight <= 0)return;
-    // int base_bd, compete_bd;
-    // if (weight < _chris_bandwidth * exp(-1) && compete_weight < _chris_bandwidth * exp(-1)){ //avoid bandwidth waste when transfer low-priority parameters.
-    //   base_bd = _chris_bandwidth;
-    //   compete_bd = _chris_bandwidth;
-    //   if(_chris_info == 1)
-    //       BPS_LOG(INFO) << ".........................RESET....................";
-    // }
-    // else if(double(weight) / (weight + compete_weight) < 0.3){ // to keep bandwidth change more smooth.
-    //   base_bd = _chris_bandwidth * 0.3;
-    //   compete_bd = _chris_bandwidth * 0.7;
-    // }
-    // else if(double(compete_weight) / (weight + compete_weight) < 0.3){
-    //   base_bd = _chris_bandwidth * 0.7;
-    //   compete_bd = _chris_bandwidth * 0.3;
-    // }
-    // else{
-    //   base_bd = _chris_bandwidth * (double(weight) / (weight + compete_weight)) ;
-    //   compete_bd = _chris_bandwidth * (double(compete_weight) / (weight + compete_weight)) ;
-    // }
-
-    // std::string command;
-    // std::string bd1 = std::to_string(base_bd);
-    // std::string bd2 = std::to_string(compete_bd);
-    // double change_threshold = double(_chris_threshold) / 100;
-    // if(pulling){
-    //   if(abs(base_bd - _old_bd_ps) >= _chris_bandwidth * change_threshold || abs(compete_bd - _old_bd_worker) >=_chris_bandwidth * change_threshold){
-    //     command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd1 + "mbit \n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd2 + "mbit";
-    //     _old_bd_ps = base_bd; //in pull process, ps upload is base, 1:3
-    //     _old_bd_worker = compete_bd;
-    //     if(_chris_info)BPS_LOG(INFO) << "ps upload:" << bd1 <<  "  worker upload:" << bd2;
-    //   }
-    //   else
-    //     return;
-    // }
-    // else{
-    //    if(abs(compete_bd - _old_bd_ps) >= _chris_bandwidth * change_threshold || abs(base_bd - _old_bd_worker) >= _chris_bandwidth * change_threshold){
-    //       command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + bd2 + "mbit \n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + bd1 + "mbit";
-    //       _old_bd_ps = compete_bd;
-    //       _old_bd_worker = base_bd; //in push process, worker upload is base, 1:4
-    //       if(_chris_info)BPS_LOG(INFO) << "ps upload:" << bd2 <<  "  worker upload:" << bd1;
-    //    }
-    //    else
-    //       return;
-    // }
-  //  if(_chris_info){
-  //     BPS_LOG(INFO) << "worker " << _worker_id << " BANDWIDTH ALLOCATION BETWEEN PS TASK AND WORKER TASK." 
-  //     BPS_LOG(INFO) << LogStrings[_qt] << " weight is:" << weight << " the compete weight is:" << compete_weight;
-  //   }
-  //   if(_chris_tuning == 11)
-  //     system(command.c_str());
-      
+    }   
   }
 
 
@@ -333,7 +273,6 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
     weight -= _chris_bandwidth * exp(task -> priority / 10); 
     if(_chris_info == 1)
         BPS_LOG(INFO) << "task finished reported: " << task -> tensor_name << "  the priority is:" << task -> priority;
-    if(_qt == PULL)
       tune_bandwidth_by_weights(task);  // add
   } 
   return;
