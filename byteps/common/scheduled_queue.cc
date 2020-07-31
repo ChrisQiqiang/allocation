@@ -203,14 +203,18 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
       double pull_weight = pull_queue -> weight;
       std::string ps, worker;
       if (weight < _chris_bandwidth) return;
-      if(weight / (weight + pull_weight) < 0.05){
+      if(weight / (weight + pull_weight) < 0.05 && (abs(ps - _old_bd_ps) / _chris_bandwidth > 0.5 || abs(worker - _old_bd_worker) / _chris_bandwidth > 0.5)){
         ps = std::to_string(_chris_bandwidth * 1);
         worker = std::to_string(_chris_bandwidth * 1);
       }
-      else{
+      else if (abs(ps - _old_bd_ps) / _chris_bandwidth > 0.5 || abs(worker - _old_bd_worker) / _chris_bandwidth > 0.5){
         ps = std::to_string(_chris_bandwidth * _chris_pull_base);
         worker = std::to_string(_chris_bandwidth * 1);
       }
+      else
+        return;
+      _old_bd_ps = ps;
+      _old_bd_ps = worker;
       std::string  command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + ps + "mbit \n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + worker + "mbit";
       if(_chris_info){
         BPS_LOG(INFO) << "worker " << _worker_id << " BANDWIDTH ALLOCATION BETWEEN PS TASK AND WORKER TASK.";
