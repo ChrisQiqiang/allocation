@@ -211,8 +211,6 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
         _old_bd_ps = _chris_bandwidth * _chris_pull_base;
         _old_bd_worker = _chris_bandwidth * 1;
       }
-      else
-        return;
       ps = std::to_string(_old_bd_ps);
       worker = std::to_string(_old_bd_worker);
       std::string  command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + ps + "mbit \n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + worker + "mbit";
@@ -289,7 +287,7 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
   //   if(_chris_tuning == 11)
   //     system(command.c_str());
       
-}
+  }
 
 
 std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask(uint64_t key) {
