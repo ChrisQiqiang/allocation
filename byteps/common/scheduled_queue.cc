@@ -49,7 +49,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   auto maxbandwidth = getenv("CHRIS_MAX_BANDWIDTH");
   _chris_bandwidth = maxbandwidth ? atoi(maxbandwidth) : INT_MAX;
   auto threshold = getenv("CHRIS_THRESHOLD");
-  _chris_threshold = threshold ? atoi(threshold) : 1;
+  _chris_threshold = threshold ? double(atoi(threshold)) / 100 : 0.1;
   _worker_id = getenv("DMLC_WORKER_ID");
   auto _pull_base = getenv("CHRIS_PULL_BASE");
   _chris_pull_base = _pull_base ? double(atoi(_pull_base)) / 100 : 0.1;
@@ -202,7 +202,7 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
       auto pull_queue = BytePSGlobal::GetScheduledQueue(PULL);
       double pull_weight = pull_queue -> weight;
       std::string ps, worker;
-      if(weight < _chris_bandwidth * exp(-1) || weight / (weight + pull_weight) < 0.05){
+      if(weight < _chris_bandwidth * exp(-1) || weight / (weight + pull_weight) < _chris_threshold){
         _old_bd_ps = _chris_bandwidth * 1;
         _old_bd_worker = _chris_bandwidth * 1;
       }
