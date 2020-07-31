@@ -57,6 +57,7 @@ class BytePSScheduledQueue {
   int _chris_threshold;
   double _chris_pull_base;
   std::string _worker_id;
+  std::string _old_command;
 };
 
 }  // namespace common
