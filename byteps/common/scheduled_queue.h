@@ -54,10 +54,12 @@ class BytePSScheduledQueue {
   int _chris_bandwidth;
   int _old_bd_ps=0;
   int _old_bd_worker=0;
-  int _chris_threshold;
+  double _chris_threshold;
   double _chris_pull_base;
+  int _dividend = 10;
   std::string _worker_id;
   std::string _old_command;
+  std::string _chris_network;
 };
 
 }  // namespace common

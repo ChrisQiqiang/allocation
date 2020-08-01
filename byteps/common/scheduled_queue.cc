@@ -53,6 +53,10 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   _worker_id = getenv("DMLC_WORKER_ID");
   auto _pull_base = getenv("CHRIS_PULL_BASE");
   _chris_pull_base = _pull_base ? double(atoi(_pull_base)) / 100 : 0.1;
+  auto _network = getenv("CHRIS_NETWORK");
+  _chris_network = _network ? _network : "resnet";
+  if(_chris_network == "vgg")
+    _dividend = 5;
   if(_qt == PULL)
     BPS_LOG(INFO) << "_chris_tuning:" << _chris_tuning << "   _chris_info: " << _chris_info 
                 << "  _chris_bandwidth: " << _chris_bandwidth << "  _chris_threshold:" << _chris_threshold << " worker id:" << _worker_id;
@@ -177,7 +181,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     }
     if((_qt == PUSH || _qt == PULL) && _tuning_on){
       // weight += 100000 / ((task -> priority - 1) * (task -> priority - 1)); //func 1, 10000 / x^2 ,not ideal
-      weight += _chris_bandwidth * exp(task -> priority / 10); //func2, _chris_bandwidth * e ^ (-x / 10); aggregation
+      weight += _chris_bandwidth * exp(task -> priority / _dividend); //func2, _chris_bandwidth * e ^ (-x / 10); aggregation
       if(_chris_info == 1)
         BPS_LOG(INFO) << "get task "  << LogStrings[_qt]  << task -> tensor_name 
                       << "  the priority is:" << task -> priority
@@ -269,7 +273,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   if((_qt == PUSH || _qt == PULL) && _tuning_on){
     std::lock_guard<std::mutex> lock(_mutex);
     // weight -= (100000 / ((task -> priority -1 ) * (task -> priority - 1)));
-    weight -= _chris_bandwidth * exp(task -> priority / 10); 
+    weight -= _chris_bandwidth * exp(task -> priority / _dividend); 
     if(_chris_info == 1)
         BPS_LOG(INFO) << "task finished reported: " << task -> tensor_name << "  the priority is:" << task -> priority;
       tune_bandwidth_by_weights(task);  // add
