@@ -56,7 +56,7 @@ class BytePSScheduledQueue {
   int _old_bd_worker=0;
   double _chris_threshold;
   double _chris_pull_base;
-  int _dividend = 10;
+  int _chris_dividend;
   std::string _worker_id;
   std::string _old_command;
   std::string _chris_network;
