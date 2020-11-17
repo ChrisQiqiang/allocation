@@ -57,12 +57,12 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   _chris_dividend = _dividend ? atoi(_dividend) : 10;
   // if(_chris_network == "vgg")
   //   _dividend = 5;
-  if(_qt == PULL)
+  if(BytePSGlobal::IsRootDevice() && _qt == PULL)
     BPS_LOG(INFO) << "_chris_tuning:" << _chris_tuning << "   _chris_info: " << _chris_info 
                 << "  _chris_bandwidth: " << _chris_bandwidth << "  _chris_threshold:" << _chris_threshold 
                 << " worker id:" << _worker_id << " _dividend:" << _dividend;
   
-  if(_qt == PUSH){
+  if(BytePSGlobal::IsRootDevice() && _qt == PUSH){
       if(_chris_tuning){
         std::string tc_command;
         if(_chris_tuning == 10)
@@ -180,7 +180,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     if (_is_scheduled) {
       _credits -= task->len;
     }
-    if((_qt == PUSH || _qt == PULL) && _tuning_on){
+    if(BytePSGlobal::IsRootDevice() && (_qt == PUSH || _qt == PULL) && _tuning_on){
       // weight += 100000 / ((task -> priority - 1) * (task -> priority - 1)); //func 1, 10000 / x^2 ,not ideal
       weight += _chris_bandwidth * exp(task -> priority / _chris_dividend); //func2, _chris_bandwidth * e ^ (-x / 10); aggregation
       if(_chris_info == 1)
@@ -203,7 +203,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 }
 
 void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTableEntry> task){
-    if(_qt == PUSH){
+    if(_qt == PUSH && BytePSGlobal::IsRootDevice()){
       auto pull_queue = BytePSGlobal::GetScheduledQueue(PULL);
       double pull_weight = pull_queue -> weight;
       std::string ps, worker;
@@ -220,7 +220,7 @@ void BytePSScheduledQueue::tune_bandwidth_by_weights(std::shared_ptr<TensorTable
       std::string  command = "sudo tc class change dev ens3 parent 1: classid 1:3 htb rate " + ps + "mbit \n sudo tc class change dev ens3 parent 1: classid 1:4 htb rate " + worker + "mbit";
       if(command == _old_command)
         return;
-      if(_chris_info){
+      if(_chris_tuning == 11 && _chris_info){
         BPS_LOG(INFO) << "worker " << _worker_id << " BANDWIDTH ALLOCATION BETWEEN PS TASK AND WORKER TASK."
                << "ps upload:" << ps <<  "  worker upload:" << worker
                << " push weight is:" << weight << " pull weight is:" << pull_weight;
